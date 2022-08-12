@@ -24,3 +24,7 @@ func ReadInput(path string) (lines []string, err error) {
 
 	return stripped, nil
 }
+
+func Purple(text string) string {
+	return "\033[35m" + text + "\033[0m"
+}

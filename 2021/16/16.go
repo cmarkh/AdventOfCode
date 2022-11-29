@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	advent "temp/adventofcode/go"
 )
@@ -16,7 +17,19 @@ func main() {
 	}
 	//fmt.Println(hex)
 
-	Binary(hex)
+	fmt.Printf("Packet %s:\n\n", hex)
+	bits, err := Binary(hex)
+	if err != nil {
+		log.Fatal(err)
+	}
+	parentPacket, err := ParseBits(bits)
+	if err != nil {
+		log.Fatal(err)
+	}
+	parentPacket.Print()
+	fmt.Printf("Version sum: %v\n\n", parentPacket.SumVersions())
+
+	fmt.Printf("Outermost packet value: %v\n", parentPacket.CalculateValue())
 }
 
 func input() (hex string, err error) {
@@ -59,49 +72,25 @@ func Binary(hex string) (bits string, err error) {
 		}
 		bits += bit
 	}
-	fmt.Println(bits)
+	//fmt.Println(bits)
 
 	return
 }
 
-func ParseBits(bits string) (sumVersionNumbers int64, err error) {
-	return parseBits(bits, -1, 0, -1)
+func ParseBits(bits string) (packet Packet, err error) {
+	packet, _, err = parseBits(bits)
+	return
 }
 
-func parseBits(bits string, packetsRemaining int64, versionSums int64, parentVersion int64) (sumVersionNumbers int64, err error) {
-	sumVersionNumbers = versionSums
-	if len(bits) == 0 {
+func parseBits(bits string) (packet Packet, bitsLeft string, err error) {
+	packet.Bits = bits
+
+	bits, err = packet.header(bits)
+	if err != nil {
 		return
 	}
-	if packetsRemaining == 0 {
-		return
-	}
-	if val, err := strconv.ParseInt(bits, 2, 64); err == nil && val == 0 {
-		return sumVersionNumbers, err
-	}
 
-	packetsRemaining--
-
-	fmt.Println()
-	fmt.Printf("parent version: %v\n", parentVersion)
-	fmt.Println(bits)
-
-	version, err := strconv.ParseInt(bits[:3], 2, 64)
-	if err != nil {
-		return sumVersionNumbers, err
-	}
-	fmt.Printf("version: %v\n", version)
-	sumVersionNumbers += version
-
-	typeID, err := strconv.ParseInt(bits[3:6], 2, 64)
-	if err != nil {
-		return sumVersionNumbers, err
-	}
-	fmt.Printf("type ID: %v\n", typeID)
-
-	bits = bits[6:] //remove header
-
-	switch typeID {
+	switch packet.TypeID {
 	case 4:
 		//Packets with type ID 4 represent a literal value. Literal value packets encode a single binary number. To do this, the binary number is padded with leading zeroes until its length is a multiple of four bits, and then it is broken into groups of four bits. Each group is prefixed by a 1 bit except the last group, which is prefixed by a 0 bit
 		last := false
@@ -114,49 +103,189 @@ func parseBits(bits string, packetsRemaining int64, versionSums int64, parentVer
 			numberFromBits += bits[1:5]
 			bits = bits[5:]
 		}
-		fmt.Printf("number: %v\n", numberFromBits)
-		decimal, err := strconv.ParseInt(numberFromBits, 2, 64)
+		packet.Value, err = strconv.ParseInt(numberFromBits, 2, 64)
 		if err != nil {
-			return sumVersionNumbers, err
+			return
 		}
-		fmt.Printf("decimal: %v\n", decimal)
-
-		return parseBits(bits, -1, sumVersionNumbers, version)
 
 	default:
 		//Every other type of packet (any packet with a type ID other than 4) represent an operator that performs some calculation on one or more sub-packets contained within
 		//An operator packet contains one or more packets. To indicate which subsequent binary data represents its sub-packets, an operator packet can use one of two modes indicated by the bit immediately after the packet header; this is called the length type ID
-		lengthTypeID := bits[0]
-		fmt.Printf("length type ID: %v\n", string(lengthTypeID))
+		packet.LengthTypeID = string(bits[0])
 		bits = bits[1:]
 
-		switch lengthTypeID {
-		case '0':
-			//If the length type ID is 0, then the next 15 bits are a number that represents the total length in bits of the sub-packets contained by this packet.
-			lengthInBitsOfSubPackets, err := strconv.ParseInt(bits[0:15], 2, 32)
+		switch packet.LengthTypeID {
+		case "0":
+			packet.BitLengthOfSubPackets, err = strconv.ParseInt(bits[0:15], 2, 64)
 			if err != nil {
-				return sumVersionNumbers, err
+				return
 			}
-			fmt.Printf("length (in bits) of sub packets: %v\n", lengthInBitsOfSubPackets)
-			bits = bits[15:] //remove any extra bits //15+lengthInBitsOfSubPackets
 
-			return parseBits(bits, -1, sumVersionNumbers, version)
+			childBits := bits[15 : 15+packet.BitLengthOfSubPackets]
+			bits = bits[15+packet.BitLengthOfSubPackets:]
 
-		case '1':
-			//If the length type ID is 1, then the next 11 bits are a number that represents the number of sub-packets immediately contained by this packet.
-			packetsRemaining, err = strconv.ParseInt(bits[0:11], 2, 32) //note this is same variable used to test for loop condition
+			for {
+				var childPacket Packet
+				childPacket, childBits, err = parseBits(childBits)
+				if err != nil {
+					return packet, "", err
+				}
+				packet.ChildPackets = append(packet.ChildPackets, childPacket)
+
+				if len(childBits) == 0 {
+					break
+				}
+			}
+
+		case "1":
+			packet.NumberOfSubPackets, err = strconv.ParseInt(bits[0:11], 2, 64)
 			if err != nil {
-				return sumVersionNumbers, err
+				return
 			}
-			fmt.Printf("number of sub packets: %v\n", packetsRemaining)
 			bits = bits[11:]
 
-			return parseBits(bits, packetsRemaining, sumVersionNumbers, version)
+			for i := 0; i < int(packet.NumberOfSubPackets); i++ {
+				var childPacket Packet
+				childPacket, bits, err = parseBits(bits)
+				if err != nil {
+					return packet, "", err
+				}
+				packet.ChildPackets = append(packet.ChildPackets, childPacket)
+			}
 
 		default:
-			err = fmt.Errorf("unkown length type ID: %v", lengthTypeID)
+			err = fmt.Errorf("unkown length type ID: %v", packet.LengthTypeID)
 			return
 		}
+	}
 
+	return packet, bits, nil
+}
+
+func (packet *Packet) CalculateValue() (val int64) {
+	switch packet.TypeID {
+	case 0:
+		packet.Value = 0
+		for _, child := range packet.ChildPackets {
+			packet.Value += child.CalculateValue()
+		}
+
+	case 1:
+		packet.Value = 1 //value is product of child packets
+		for _, child := range packet.ChildPackets {
+			packet.Value *= child.CalculateValue()
+		}
+
+	case 2:
+		minimum := int64(math.MaxInt64 / 2)
+		for _, child := range packet.ChildPackets {
+			childVal := child.CalculateValue()
+			if childVal < minimum {
+				minimum = childVal
+			}
+		}
+		packet.Value = minimum
+
+	case 3:
+		var max int64 = 0
+		for _, child := range packet.ChildPackets {
+			childVal := child.CalculateValue()
+			if childVal > max {
+				max = childVal
+			}
+		}
+		packet.Value = max
+
+	case 4:
+		break //packet.Value is already set for literal value packets
+
+	case 5:
+		//These packets always have exactly two sub-packets
+		if packet.ChildPackets[0].CalculateValue() > packet.ChildPackets[1].CalculateValue() {
+			packet.Value = 1
+		} else {
+			packet.Value = 0
+		}
+
+	case 6:
+		//These packets always have exactly two sub-packets
+		if packet.ChildPackets[0].CalculateValue() < packet.ChildPackets[1].CalculateValue() {
+			packet.Value = 1
+		} else {
+			packet.Value = 0
+		}
+
+	case 7:
+		//These packets always have exactly two sub-packets
+		if packet.ChildPackets[0].CalculateValue() == packet.ChildPackets[1].CalculateValue() {
+			packet.Value = 1
+		} else {
+			packet.Value = 0
+		}
+
+	}
+
+	return packet.Value
+}
+
+type Packet struct {
+	Bits string
+	Header
+	OperatingPacket
+	Value int64
+}
+type Header struct {
+	Version int64
+	TypeID  int64
+}
+type OperatingPacket struct {
+	LengthTypeID          string
+	BitLengthOfSubPackets int64
+	NumberOfSubPackets    int64
+	ChildPackets          []Packet
+}
+
+func (packet *Packet) header(bits string) (bitsLeft string, err error) {
+	packet.Version, err = strconv.ParseInt(bits[:3], 2, 64)
+	if err != nil {
+		return
+	}
+	packet.TypeID, err = strconv.ParseInt(bits[3:6], 2, 64)
+	if err != nil {
+		return
+	}
+	bits = bits[6:] //remove header
+	return bits, nil
+}
+
+func (packet Packet) SumVersions() (sum int64) {
+	sum = packet.Version
+	for _, child := range packet.ChildPackets {
+		sum += child.SumVersions()
+	}
+	return
+}
+
+func (packet Packet) Print() {
+	fmt.Println(packet.Bits)
+	fmt.Printf("Version: %v\n", packet.Version)
+	fmt.Printf("TypeID: %v\n", packet.TypeID)
+	if packet.BitLengthOfSubPackets == 0 && packet.NumberOfSubPackets == 0 {
+		fmt.Printf("Value: %v\n", packet.Value)
+	} else {
+		fmt.Printf("Number of child packets: %v\n", len(packet.ChildPackets))
+		fmt.Printf("Length Type ID: %v\n", packet.LengthTypeID)
+		if packet.BitLengthOfSubPackets > 0 {
+			fmt.Printf("Bit length of sub packets: %v\n", packet.BitLengthOfSubPackets)
+		}
+		if packet.NumberOfSubPackets > 0 {
+			fmt.Printf("Number of sub packets: %v\n", packet.NumberOfSubPackets)
+		}
+	}
+	fmt.Println()
+
+	for _, child := range packet.ChildPackets {
+		fmt.Printf("Parent version: %v\n", packet.Version)
+		child.Print()
 	}
 }

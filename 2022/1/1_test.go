@@ -49,10 +49,11 @@ func TestMostFood(t *testing.T) {
 func TestTop3(t *testing.T) {
 	elves := parse(strings.Split(test1, "\n"))
 	elves = totalFoodPerElf(elves)
-	elfIs, sum := top3(elves)
-	for _, e := range elfIs {
-		fmt.Printf("elf %v has %v food\n", e, elves[e].totalFood)
+	topElves, sum := top3(elves)
+	for _, e := range topElves {
+		fmt.Printf("elf %v has %v food\n", e.index, e.totalFood)
 	}
+	fmt.Println()
 	fmt.Printf("together they have %v food\n", sum)
 	fmt.Println()
 }

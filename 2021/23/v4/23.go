@@ -112,6 +112,7 @@ func (bur burrow) shortestPath() (energyUsed int, final move) {
 	return
 }
 
+//lint:ignore U1000 ignore unused
 func sortMoves(moves []move) {
 	s := func(i, j int) bool {
 		//sum each row's position with a fully sorted char

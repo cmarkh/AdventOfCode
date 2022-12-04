@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2022"
 )
 
 func main() {

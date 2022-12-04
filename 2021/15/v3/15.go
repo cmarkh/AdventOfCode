@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	"strconv"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 )
 
 var inputPart1 = "input_1.txt"

@@ -5,7 +5,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2022"
 )
 
 func main() {

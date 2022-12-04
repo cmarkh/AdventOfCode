@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 )
 
 var inputPath = "../input.txt"

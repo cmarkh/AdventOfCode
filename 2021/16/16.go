@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	"strconv"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 )
 
 //https://adventofcode.com/2021/day/16

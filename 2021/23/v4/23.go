@@ -37,7 +37,7 @@ func main() {
 	fmt.Println()
 
 	fmt.Println("(and part 1 again):")
-	//fmt.Printf("used %v energy\n", energy1)
+	fmt.Printf("used %v energy\n", energy1)
 
 	fmt.Printf("You took %v to finish. I fell asleep waiting...\n", time.Since(t))
 }
@@ -106,7 +106,7 @@ func (bur burrow) shortestPath() (energyUsed int, final move) {
 			}
 		}
 
-		sortMoves(moves)
+		//sortMoves(moves)
 	}
 
 	return

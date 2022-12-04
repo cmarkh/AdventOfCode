@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 	"testing"
 )
 

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	advent1 "temp/adventofcode/go/1"
+	advent1 "temp/adventofcode/go/2021/1"
 )
 
 func main() {

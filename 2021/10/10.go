@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 
 	"golang.org/x/exp/slices"
 	"golang.org/x/text/unicode/bidi"

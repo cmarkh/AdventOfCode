@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	advent "temp/adventofcode/go"
+	advent "temp/adventofcode/go/2021"
 
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"

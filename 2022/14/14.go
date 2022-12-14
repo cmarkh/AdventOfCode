@@ -178,9 +178,6 @@ func (g grid) produceSand2() (stackedSand int) {
 	for {
 		sand := sandIngress
 		for {
-			if sand.y >= maxY {
-				return
-			}
 			if sand.y == maxY-1 {
 				g[sand] = "o"
 				stackedSand++

@@ -148,7 +148,7 @@ func lineByLine(sensors sensors, searchSpace int) (notSensed position) {
 				x = coverage.endX + 1
 			}
 		}
-		if x < searchSpace {
+		if x <= searchSpace {
 			return position{x, y}
 		}
 	}

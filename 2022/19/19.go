@@ -147,9 +147,12 @@ func maxOpenGeodes(blueprints []blueprint, timeCap int) (totalQuality int, produ
 		totalQuality += geodes * print.id
 		maxes = append(maxes, geodes)
 	}
+
+	product = 1
 	for _, max := range maxes {
 		product *= max
 	}
+
 	return
 }
 

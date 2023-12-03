@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[timed::timed]
 pub fn part1(input: &str) -> i32 {
     let mut sum = 0;
     for line in input.lines() {
@@ -20,6 +21,22 @@ pub fn part1(input: &str) -> i32 {
         sum += line_num;
     }
     sum
+}
+
+#[timed::timed]
+pub fn part1_2(input: &str) -> u32 {
+    input
+        .lines()
+        .map(|line| {
+            let mut chars = line.chars();
+            let first = chars.find_map(|c| c.to_digit(10)).unwrap();
+            let last = chars
+                .rfind(|c| c.is_ascii_digit())
+                .map(|c| c.to_digit(10).unwrap())
+                .unwrap_or(first);
+            first * 10 + last
+        })
+        .sum()
 }
 
 lazy_static::lazy_static! {
@@ -83,7 +100,15 @@ mod tests {
         let case = std::fs::read_to_string("src/day1/input1.txt").unwrap();
         let ans = part1(&case);
         println!("{}", ans);
-        assert_eq!(part1(&case), 56049);
+        assert_eq!(ans, 56049);
+    }
+
+    #[test]
+    fn test_part1_2() {
+        let case = std::fs::read_to_string("src/day1/input1.txt").unwrap();
+        let ans = part1_2(&case);
+        println!("{}", ans);
+        assert_eq!(ans, 56049);
     }
 
     #[test]

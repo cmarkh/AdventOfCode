@@ -1,6 +1,7 @@
 pub mod almanac;
 pub mod seeds;
 
+#[timed::timed]
 pub fn part2(seeds: &seeds::Seeds, almanac: &almanac::Almanac) -> i64 {
     (0..i64::MAX)
         .find(|loc| seeds.contains(almanac.seed(*loc)))

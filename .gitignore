@@ -1,3 +1,4 @@
 local.go
 settings.json
 *.pyc
+*/ocaml/

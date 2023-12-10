@@ -67,7 +67,7 @@ mod test {
     use test_case::case;
 
     #[case("ex1.txt" => 30)]
-    #[case("input.txt" => 20667)]
+    #[case("input.txt" => 5833065)]
     fn test_part1(input_name: &str) -> usize {
         let input = std::fs::read_to_string(format!("src/day4/{}", input_name)).unwrap();
         let cards = parse_input(&input);

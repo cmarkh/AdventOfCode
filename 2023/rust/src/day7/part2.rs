@@ -63,10 +63,6 @@ impl Ord for Hand {
         };
 
         match rank_alt_j(&self.set()).cmp(&rank_alt_j(&other.set())) {
-            // Ordering::Equal => match rank(&self.set()).cmp(&rank(&other.set())) {
-            //     Ordering::Equal => hand_cmp(),
-            //     other => other,
-            // },
             Ordering::Equal => hand_cmp(),
             other => other,
         }

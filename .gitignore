@@ -2,3 +2,4 @@ local.go
 settings.json
 *.pyc
 */ocaml/
+.DS_Store

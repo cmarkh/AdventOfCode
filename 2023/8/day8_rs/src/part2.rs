@@ -163,10 +163,7 @@ impl<'a> Lines<'a> {
 fn part_2(instructions: Instructions, map: Map) -> u64 {
     let mut lines = Lines::new(&instructions, &map);
 
-    let mut done = false;
-    while !done {
-        done = lines.step_all();
-    }
+    while !lines.step_all() {}
 
     lines.lines[0].steps
 }

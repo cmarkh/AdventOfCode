@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod part1;
+pub mod part2;
 
 #[derive(Debug)]
 pub struct Rows(Vec<Row>);

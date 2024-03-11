@@ -22,7 +22,7 @@ pub struct Grid {
 #[derive(Debug)]
 struct Tile {
     coordinate: (usize, usize),
-    connections: [(usize, usize); 2],
+    connections: Vec<(usize, usize)>,
     symbol: String,
 }
 
@@ -78,38 +78,34 @@ fn parse_input(input: &str) -> Grid {
     for (r, row) in char_grid.iter().enumerate() {
         for (c, col) in row.iter().enumerate() {
             let coordinate = (r, c);
-            let mut connections: [(usize, usize); 2] = [(0, 0); 2];
+            let mut connections = Vec::new();
             dbg!(r, c);
             match col {
-                '|' => connections = [(r.saturating_sub(1), c), (r + 1, c)],
-                '-' => connections = [(r, c.saturating_sub(1)), (r, c + 1)],
-                'L' => connections = [(r.saturating_sub(1), c), (r, c + 1)],
-                'J' => connections = [(r.saturating_sub(1), c), (r, c.saturating_sub(1))],
-                '7' => connections = [(r, c.saturating_sub(1)), (r + 1, c)],
-                'F' => connections = [(r, c + 1), (r + 1, c)],
+                '|' => connections = vec![(r.saturating_sub(1), c), (r + 1, c)],
+                '-' => connections = vec![(r, c.saturating_sub(1)), (r, c + 1)],
+                'L' => connections = vec![(r.saturating_sub(1), c), (r, c + 1)],
+                'J' => connections = vec![(r.saturating_sub(1), c), (r, c.saturating_sub(1))],
+                '7' => connections = vec![(r, c.saturating_sub(1)), (r + 1, c)],
+                'F' => connections = vec![(r, c + 1), (r + 1, c)],
                 '.' => (),
                 'S' => {
                     grid.start = (r, c);
 
-                    let mut conn_idx = 0;
                     let mut xy = (r - 1, c);
                     if valid_conn(xy.0, xy.1) {
-                        connections[conn_idx] = xy;
-                        conn_idx += 1;
+                        connections.push(xy);
                     }
                     xy = (r, c - 1);
                     if valid_conn(xy.0, xy.1) {
-                        connections[conn_idx] = xy;
-                        conn_idx += 1;
+                        connections.push(xy);
                     }
                     xy = (r + 1, c);
-                    if valid_conn(xy.0, xy.1) && conn_idx < 2 {
-                        connections[conn_idx] = xy;
-                        conn_idx += 1;
+                    if valid_conn(xy.0, xy.1) {
+                        connections.push(xy);
                     }
                     xy = (r, c + 1);
-                    if valid_conn(xy.0, xy.1) && conn_idx < 2 {
-                        connections[conn_idx] = xy;
+                    if valid_conn(xy.0, xy.1) {
+                        connections.push(xy);
                     }
                 }
                 _ => unreachable!(),
@@ -144,8 +140,9 @@ impl Grid {
             history.insert(position.0, position.1);
 
             let tile = self.map.get(&position.0).unwrap();
-            queue.push((tile.connections[0], position.1 + 1));
-            queue.push((tile.connections[1], position.1 + 1));
+            for conn in &tile.connections {
+                queue.push((*conn, position.1 + 1))
+            }
         }
 
         history

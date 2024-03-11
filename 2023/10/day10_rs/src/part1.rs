@@ -65,14 +65,14 @@ fn parse_input(input: &str) -> Grid {
         char_grid.push(row);
     }
 
-    let valid_conn = |r: usize, c: usize| -> bool {
+    let valid_conn = |r: usize, c: usize| -> Option<char> {
         if let Some(row) = char_grid.get(r)
             && let Some(col) = row.get(c)
             && *col != '.'
         {
-            return true;
+            return Some(*col);
         }
-        false
+        None
     };
 
     for (r, row) in char_grid.iter().enumerate() {
@@ -92,19 +92,27 @@ fn parse_input(input: &str) -> Grid {
                     grid.start = (r, c);
 
                     let mut xy = (r - 1, c);
-                    if valid_conn(xy.0, xy.1) {
+                    if let Some(ch) = valid_conn(xy.0, xy.1)
+                        && (ch == '|' || ch == '7' || ch == 'F')
+                    {
                         connections.push(xy);
                     }
                     xy = (r, c - 1);
-                    if valid_conn(xy.0, xy.1) {
+                    if let Some(ch) = valid_conn(xy.0, xy.1)
+                        && (ch == '-' || ch == 'F' || ch == 'L')
+                    {
                         connections.push(xy);
                     }
                     xy = (r + 1, c);
-                    if valid_conn(xy.0, xy.1) {
+                    if let Some(ch) = valid_conn(xy.0, xy.1)
+                        && (ch == '|' || ch == 'L' || ch == 'J')
+                    {
                         connections.push(xy);
                     }
                     xy = (r, c + 1);
-                    if valid_conn(xy.0, xy.1) {
+                    if let Some(ch) = valid_conn(xy.0, xy.1)
+                        && (ch == '-' || ch == 'J' || ch == '7')
+                    {
                         connections.push(xy);
                     }
                 }
@@ -194,7 +202,7 @@ mod test {
     }
 
     #[case("ex1.txt" => 4)]
-    #[case("input.txt" => 0)]
+    #[case("input.txt" => 6923)]
     fn test_part_1(file_name: &str) -> u64 {
         let grid = get_input(file_name);
         let max_steps = part_1(grid);

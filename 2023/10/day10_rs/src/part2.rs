@@ -168,66 +168,61 @@ impl Grid {
     }
 
     fn is_tile_inside_loop(&self, tile: &Tile) -> bool {
-        if tile.symbol != '.' {
+        if tile.is_loop {
             return false;
         }
 
-        let mut touched_pipe = 0;
-        for r in (0..tile.coordinate.0).rev() {
-            let mut loop_count = 0;
-            if r == 0 {
-                return false;
-            }
-            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
-            if neighbor.is_loop {
-                touched_pipe += 1;
-                break;
-            }
-            if neighbor.symbol != '.' {
-                break;
-            }
-        }
-        for r in tile.coordinate.0..self.size.0 {
-            if r == self.size.0 - 1 {
-                return false;
-            }
-            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
-            if neighbor.is_loop {
-                touched_pipe += 1;
-                break;
-            }
-            if neighbor.symbol != '.' {
-                break;
-            }
-        }
-        for c in (0..tile.coordinate.1).rev() {
-            if c == 0 {
-                return false;
-            }
-            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
-            if neighbor.is_loop {
-                touched_pipe += 1;
-                break;
-            }
-            if neighbor.symbol != '.' {
-                break;
-            }
-        }
-        for c in tile.coordinate.0..self.size.1 {
-            if c == self.size.1 - 1 {
-                return false;
-            }
-            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
-            if neighbor.is_loop {
-                touched_pipe += 1;
-                break;
-            }
-            if neighbor.symbol != '.' {
-                break;
-            }
-        }
+        dbg!(tile.coordinate);
 
-        touched_pipe == 4
+        let mut loop_count = 0;
+        for r in (0..tile.coordinate.0).rev() {
+            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
+            if neighbor.is_loop {
+                loop_count += 1;
+            }
+        }
+        if loop_count % 2 == 0 {
+            return false;
+        }
+        dbg!((1, tile.coordinate));
+
+        let mut loop_count = 0;
+        for r in tile.coordinate.0..self.size.0 {
+            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
+            if neighbor.is_loop {
+                loop_count += 1;
+            }
+        }
+        if loop_count % 2 == 0 {
+            return false;
+        }
+        dbg!((2, tile.coordinate));
+
+        let mut loop_count = 0;
+        for c in (0..tile.coordinate.1).rev() {
+            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
+            if neighbor.is_loop {
+                loop_count += 1;
+            }
+        }
+        if loop_count % 2 == 0 {
+            return false;
+        }
+        dbg!((3, tile.coordinate));
+
+        let mut loop_count = 0;
+        for c in tile.coordinate.1..self.size.1 {
+            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
+            if neighbor.is_loop {
+                loop_count += 1;
+            }
+        }
+        if loop_count % 2 == 0 {
+            return false;
+        }
+        dbg!((4, tile.coordinate));
+
+        true
     }
 }
 
@@ -281,6 +276,7 @@ mod test {
     }
 
     #[case("ex2.txt" => 4)]
+    #[case("ex3.txt" => 10)]
     #[case("input.txt" => 6923)]
     fn test_part_2(file_name: &str) -> u64 {
         let mut grid = get_input(file_name);

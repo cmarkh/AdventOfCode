@@ -1,5 +1,25 @@
 #![allow(dead_code)]
 
+use std::{collections::HashMap, fmt};
+
+#[derive(Debug)]
+pub struct Grid {
+    map: HashMap<(usize, usize), Tile>,
+    start: (usize, usize),
+    size: (usize, usize),
+    pipe: Vec<(usize, usize)>,
+}
+
+#[derive(Debug)]
+struct Tile {
+    coordinate: (usize, usize),
+    connections: Vec<(usize, usize)>,
+    symbol: char,
+    symbol_enum: Symbol,
+    is_loop: bool,
+    is_wall: bool,
+}
+
 /*
 | is a vertical pipe connecting north and south.
 - is a horizontal pipe connecting east and west.
@@ -11,21 +31,32 @@ F is a 90-degree bend connecting south and east.
 S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
  */
 
-use std::{collections::HashMap, fmt};
-
 #[derive(Debug)]
-pub struct Grid {
-    map: HashMap<(usize, usize), Tile>,
-    start: (usize, usize),
-    size: (usize, usize),
+enum Symbol {
+    Vertical,
+    Horizontal,
+    NorthEast,
+    NorthWest,
+    SouthEast,
+    SouthWest,
+    Ground,
+    Start,
 }
 
-#[derive(Debug)]
-struct Tile {
-    coordinate: (usize, usize),
-    connections: Vec<(usize, usize)>,
-    symbol: char,
-    is_loop: bool,
+impl Symbol {
+    fn new(symbol: char) -> Self {
+        match symbol {
+            '|' => Self::Vertical,
+            '-' => Self::Horizontal,
+            'L' => Self::NorthEast,
+            'J' => Self::NorthWest,
+            '7' => Self::SouthWest,
+            'F' => Self::SouthEast,
+            '.' => Self::Ground,
+            'S' => Self::Start,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl fmt::Display for Grid {
@@ -47,6 +78,8 @@ impl fmt::Display for Grid {
                     Some(tile) => {
                         if tile.is_loop {
                             write!(f, "*")?
+                        } else if tile.is_wall {
+                            write!(f, "w")?
                         } else {
                             write!(f, "{}", tile.symbol)?
                         }
@@ -62,11 +95,7 @@ impl fmt::Display for Grid {
 }
 
 fn parse_input(input: &str) -> Grid {
-    let mut grid = Grid {
-        map: HashMap::new(),
-        start: (0, 0),
-        size: (0, 0),
-    };
+    let mut grid = Grid { map: HashMap::new(), start: (0, 0), size: (0, 0), pipe: Vec::new() };
 
     let mut char_grid: Vec<Vec<char>> = Vec::with_capacity(input.lines().count());
     for line in input.lines() {
@@ -132,7 +161,9 @@ fn parse_input(input: &str) -> Grid {
                     coordinate,
                     connections,
                     symbol: *col,
+                    symbol_enum: Symbol::new(*col),
                     is_loop: false,
+                    is_wall: false,
                 },
             );
             grid.size = (r + 1, c + 1);
@@ -147,6 +178,7 @@ impl Grid {
         let mut position = {
             let start = self.map.get_mut(&self.start).unwrap();
             start.is_loop = true;
+            self.pipe.push(start.coordinate);
             *start.connections.first().unwrap()
         };
         let mut former = self.start;
@@ -154,6 +186,7 @@ impl Grid {
         while position != self.start {
             let pos = self.map.get_mut(&position).unwrap();
             pos.is_loop = true;
+            self.pipe.push(pos.coordinate);
 
             let mut conns = pos.connections.iter();
             let maybe = conns.next().unwrap();
@@ -167,79 +200,63 @@ impl Grid {
         }
     }
 
-    fn is_tile_inside_loop(&self, tile: &Tile) -> bool {
-        if tile.is_loop {
-            return false;
-        }
+    fn mark_wall(&mut self) {
+        let mut mark_wall = |right: bool| {
+            for i in 0..self.pipe.len() {
+                let current = self.map.get(&self.pipe[i]).unwrap();
+                let former = if i == 0 { self.pipe[self.pipe.len() - 1] } else { self.pipe[i - 1] };
 
-        dbg!(tile.coordinate);
+                let wall = match current.symbol_enum {
+                    Symbol::Vertical => match (former.0 > current.coordinate.0, right) {
+                        (true, true) => (current.coordinate.0, current.coordinate.1 + 1),
+                        (true, false) => (current.coordinate.0, current.coordinate.1 - 1),
+                        (false, true) => (current.coordinate.0, current.coordinate.1 - 1),
+                        (false, false) => (current.coordinate.0, current.coordinate.1 + 1),
+                    },
+                    Symbol::Horizontal => match (former.1 > current.coordinate.1, right) {
+                        (true, true) => (current.coordinate.0 - 1, current.coordinate.1),
+                        (true, false) => (current.coordinate.0 + 1, current.coordinate.1),
+                        (false, true) => (current.coordinate.0 - 1, current.coordinate.1),
+                        (false, false) => (current.coordinate.0 + 1, current.coordinate.1),
+                    },
+                    Symbol::NorthEast => match (former.0 < current.coordinate.0, right) {
+                        (true, true) => (current.coordinate.0, current.coordinate.1 + 1),
+                        (true, false) => (current.coordinate.0, current.coordinate.1),
+                        (false, true) => (current.coordinate.0, current.coordinate.1),
+                        (false, false) => (current.coordinate.0, current.coordinate.1),
+                    },
+                    Symbol::NorthWest => match (former.1 > current.coordinate.1, right) {
+                        (true, true) => (current.coordinate.0, current.coordinate.1),
+                        (true, false) => (current.coordinate.0, current.coordinate.1),
+                        (false, true) => (current.coordinate.0, current.coordinate.1),
+                        (false, false) => (current.coordinate.0, current.coordinate.1),
+                    },
+                    Symbol::SouthWest => match (former.1 > current.coordinate.1, right) {
+                        (true, true) => (current.coordinate.0, current.coordinate.1),
+                        (true, false) => (current.coordinate.0, current.coordinate.1),
+                        (false, true) => (current.coordinate.0, current.coordinate.1),
+                        (false, false) => (current.coordinate.0, current.coordinate.1),
+                    },
+                    Symbol::SouthEast => match (former.1 > current.coordinate.1, right) {
+                        (true, true) => (current.coordinate.0, current.coordinate.1),
+                        (true, false) => (current.coordinate.0, current.coordinate.1),
+                        (false, true) => (current.coordinate.0, current.coordinate.1),
+                        (false, false) => (current.coordinate.0, current.coordinate.1),
+                    },
+                    Symbol::Ground => unreachable!(),
+                    Symbol::Start => unreachable!(),
+                };
 
-        let mut loop_count = 0;
-        for r in (0..tile.coordinate.0).rev() {
-            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
-            if neighbor.is_loop {
-                loop_count += 1;
+                self.map.get_mut(&wall).unwrap().is_wall = true;
             }
-        }
-        if loop_count % 2 == 0 {
-            return false;
-        }
-        dbg!((1, tile.coordinate));
-
-        let mut loop_count = 0;
-        for r in tile.coordinate.0..self.size.0 {
-            let neighbor = self.map.get(&(r, tile.coordinate.1)).unwrap();
-            if neighbor.is_loop {
-                loop_count += 1;
-            }
-        }
-        if loop_count % 2 == 0 {
-            return false;
-        }
-        dbg!((2, tile.coordinate));
-
-        let mut loop_count = 0;
-        for c in (0..tile.coordinate.1).rev() {
-            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
-            if neighbor.is_loop {
-                loop_count += 1;
-            }
-        }
-        if loop_count % 2 == 0 {
-            return false;
-        }
-        dbg!((3, tile.coordinate));
-
-        let mut loop_count = 0;
-        for c in tile.coordinate.1..self.size.1 {
-            let neighbor = self.map.get(&(tile.coordinate.0, c)).unwrap();
-            if neighbor.is_loop {
-                loop_count += 1;
-            }
-        }
-        if loop_count % 2 == 0 {
-            return false;
-        }
-        dbg!((4, tile.coordinate));
-
-        true
+        };
     }
 }
 
 pub fn part_2(grid: &mut Grid) -> u64 {
-    grid.mark_loop();
+    let pipe = grid.mark_loop();
 
     let mut nests = 0;
-
-    for r in 0..grid.size.0 {
-        for c in 0..grid.size.1 {
-            let tile = grid.map.get(&(r, c)).unwrap();
-            if grid.is_tile_inside_loop(tile) {
-                dbg!((r, c));
-                nests += 1;
-            }
-        }
-    }
 
     nests
 }
@@ -272,7 +289,18 @@ mod test {
     fn test_print_grid(file_name: &str) {
         let mut grid = get_input(file_name);
         grid.mark_loop();
+        grid.mark_wall();
         println!("{}", grid);
+    }
+
+    #[ignore]
+    #[case("ex2.txt")]
+    #[case("ex3.txt")]
+    #[case("input.txt")]
+    fn test_loop(file_name: &str) {
+        let mut grid = get_input(file_name);
+        grid.mark_loop();
+        dbg!(grid.pipe);
     }
 
     #[case("ex2.txt" => 4)]

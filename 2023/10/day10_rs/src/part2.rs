@@ -290,44 +290,56 @@ impl Grid {
         }
 
         for r in (0..tile.coordinate.0).rev() {
-            if let Some(other) = self.map.get(&(r, tile.coordinate.1)) {
-                if other.is_wall {
-                    return true;
+            match self.map.get(&(r, tile.coordinate.1)) {
+                Some(other) => {
+                    if other.is_wall {
+                        return true;
+                    }
+                    if other.is_loop {
+                        break;
+                    }
                 }
-                if !matches!(other.symbol_enum, Symbol::Ground) {
-                    break;
-                }
+                None => break,
             }
         }
         for r in tile.coordinate.0..self.size.0 {
-            if let Some(other) = self.map.get(&(r, tile.coordinate.1)) {
-                if other.is_wall {
-                    return true;
+            match self.map.get(&(r, tile.coordinate.1)) {
+                Some(other) => {
+                    if other.is_wall {
+                        return true;
+                    }
+                    if other.is_loop {
+                        break;
+                    }
                 }
-                if !matches!(other.symbol_enum, Symbol::Ground) {
-                    break;
-                }
+                None => break,
             }
         }
 
         for c in (0..tile.coordinate.1).rev() {
-            if let Some(other) = self.map.get(&(tile.coordinate.0, c)) {
-                if other.is_wall {
-                    return true;
+            match self.map.get(&(tile.coordinate.0, c)) {
+                Some(other) => {
+                    if other.is_wall {
+                        return true;
+                    }
+                    if other.is_loop {
+                        break;
+                    }
                 }
-                if !matches!(other.symbol_enum, Symbol::Ground) {
-                    break;
-                }
+                None => break,
             }
         }
         for c in tile.coordinate.1..self.size.1 {
-            if let Some(other) = self.map.get(&(tile.coordinate.0, c)) {
-                if other.is_wall {
-                    return true;
+            match self.map.get(&(tile.coordinate.0, c)) {
+                Some(other) => {
+                    if other.is_wall {
+                        return true;
+                    }
+                    if other.is_loop {
+                        break;
+                    }
                 }
-                if !matches!(other.symbol_enum, Symbol::Ground) {
-                    break;
-                }
+                None => break,
             }
         }
 
@@ -338,7 +350,7 @@ impl Grid {
         let mut count = 0;
 
         let tiles_to_update: Vec<(usize, usize)> =
-            self.map.iter().filter(|&(_, tile)| dbg!(self.tile_is_inside(tile))).map(|(coord, _)| *coord).collect();
+            self.map.iter().filter(|&(_, tile)| self.tile_is_inside(tile)).map(|(coord, _)| *coord).collect();
 
         for coord in tiles_to_update {
             if let Some(tile) = self.map.get_mut(&coord) {
@@ -355,7 +367,6 @@ pub fn part_2(grid: &mut Grid) -> u64 {
     grid.mark_loop();
     grid.pipe.reverse();
     grid.mark_wall();
-    println!("{}", grid);
     grid.mark_inside()
 }
 
@@ -389,6 +400,7 @@ mod test {
         grid.mark_loop();
         grid.pipe.reverse();
         grid.mark_wall();
+        grid.mark_inside();
         println!("{}", grid);
     }
 
@@ -404,7 +416,7 @@ mod test {
 
     #[case("ex2.txt" => 4)]
     #[case("ex3.txt" => 10)]
-    #[case("input.txt" => 6923)]
+    #[case("input.txt" => 529)]
     fn test_part_2(file_name: &str) -> u64 {
         let mut grid = get_input(file_name);
         let nest_spaces = part_2(&mut grid);

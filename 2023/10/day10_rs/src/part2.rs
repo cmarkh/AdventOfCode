@@ -18,6 +18,7 @@ struct Tile {
     symbol_enum: Symbol,
     is_loop: bool,
     is_wall: bool,
+    is_inside: bool,
 }
 
 /*
@@ -78,6 +79,8 @@ impl fmt::Display for Grid {
                     Some(tile) => {
                         if tile.is_loop {
                             write!(f, "*")?
+                        } else if tile.is_inside {
+                            write!(f, "I")?
                         } else if tile.is_wall {
                             write!(f, "w")?
                         } else {
@@ -164,6 +167,7 @@ fn parse_input(input: &str) -> Grid {
                     symbol_enum: Symbol::new(*col),
                     is_loop: false,
                     is_wall: false,
+                    is_inside: false,
                 },
             );
             grid.size = (r + 1, c + 1);
@@ -201,64 +205,150 @@ impl Grid {
     }
 
     fn mark_wall(&mut self) {
-        let mut mark_wall = |right: bool| {
-            for i in 0..self.pipe.len() {
-                let current = self.map.get(&self.pipe[i]).unwrap();
-                let former = if i == 0 { self.pipe[self.pipe.len() - 1] } else { self.pipe[i - 1] };
+        let mut walls = Vec::new();
 
-                let wall = match current.symbol_enum {
-                    Symbol::Vertical => match (former.0 > current.coordinate.0, right) {
-                        (true, true) => (current.coordinate.0, current.coordinate.1 + 1),
-                        (true, false) => (current.coordinate.0, current.coordinate.1 - 1),
-                        (false, true) => (current.coordinate.0, current.coordinate.1 - 1),
-                        (false, false) => (current.coordinate.0, current.coordinate.1 + 1),
-                    },
-                    Symbol::Horizontal => match (former.1 > current.coordinate.1, right) {
-                        (true, true) => (current.coordinate.0 - 1, current.coordinate.1),
-                        (true, false) => (current.coordinate.0 + 1, current.coordinate.1),
-                        (false, true) => (current.coordinate.0 - 1, current.coordinate.1),
-                        (false, false) => (current.coordinate.0 + 1, current.coordinate.1),
-                    },
-                    Symbol::NorthEast => match (former.0 < current.coordinate.0, right) {
-                        (true, true) => (current.coordinate.0, current.coordinate.1 + 1),
-                        (true, false) => (current.coordinate.0, current.coordinate.1),
-                        (false, true) => (current.coordinate.0, current.coordinate.1),
-                        (false, false) => (current.coordinate.0, current.coordinate.1),
-                    },
-                    Symbol::NorthWest => match (former.1 > current.coordinate.1, right) {
-                        (true, true) => (current.coordinate.0, current.coordinate.1),
-                        (true, false) => (current.coordinate.0, current.coordinate.1),
-                        (false, true) => (current.coordinate.0, current.coordinate.1),
-                        (false, false) => (current.coordinate.0, current.coordinate.1),
-                    },
-                    Symbol::SouthWest => match (former.1 > current.coordinate.1, right) {
-                        (true, true) => (current.coordinate.0, current.coordinate.1),
-                        (true, false) => (current.coordinate.0, current.coordinate.1),
-                        (false, true) => (current.coordinate.0, current.coordinate.1),
-                        (false, false) => (current.coordinate.0, current.coordinate.1),
-                    },
-                    Symbol::SouthEast => match (former.1 > current.coordinate.1, right) {
-                        (true, true) => (current.coordinate.0, current.coordinate.1),
-                        (true, false) => (current.coordinate.0, current.coordinate.1),
-                        (false, true) => (current.coordinate.0, current.coordinate.1),
-                        (false, false) => (current.coordinate.0, current.coordinate.1),
-                    },
-                    Symbol::Ground => unreachable!(),
-                    Symbol::Start => unreachable!(),
-                };
+        let pipe = &self.pipe;
 
-                self.map.get_mut(&wall).unwrap().is_wall = true;
+        for i in 0..pipe.len() {
+            let current = self.map.get(&pipe[i]).unwrap();
+            let former = if i == 0 { pipe[pipe.len() - 1] } else { pipe[i - 1] };
+
+            match current.symbol_enum {
+                Symbol::Vertical => match former.0 < current.coordinate.0 {
+                    true => {
+                        if current.coordinate.1 > 0 {
+                            walls.push((current.coordinate.0, current.coordinate.1 - 1))
+                        }
+                    }
+                    false => walls.push((current.coordinate.0, current.coordinate.1 + 1)),
+                },
+                Symbol::Horizontal => match former.1 < current.coordinate.1 {
+                    true => walls.push((current.coordinate.0 + 1, current.coordinate.1)),
+                    false => {
+                        if current.coordinate.0 > 0 {
+                            walls.push((current.coordinate.0 - 1, current.coordinate.1))
+                        }
+                    }
+                },
+                Symbol::NorthEast => match former.1 == current.coordinate.1 {
+                    true => {
+                        if current.coordinate.1 > 0 {
+                            walls.push((current.coordinate.0, current.coordinate.1 - 1));
+                        }
+                        walls.push((current.coordinate.0 + 1, current.coordinate.1));
+                    }
+                    false => {}
+                },
+                Symbol::NorthWest => match former.0 == current.coordinate.0 {
+                    true => {
+                        walls.push((current.coordinate.0 + 1, current.coordinate.1));
+                        walls.push((current.coordinate.0, current.coordinate.1 + 1));
+                    }
+                    false => {}
+                },
+                Symbol::SouthWest => match former.1 == current.coordinate.1 {
+                    true => {
+                        walls.push((current.coordinate.0, current.coordinate.1 + 1));
+                        if current.coordinate.0 > 0 {
+                            walls.push((current.coordinate.0 - 1, current.coordinate.1));
+                        }
+                    }
+                    false => {}
+                },
+                Symbol::SouthEast => match former.0 == current.coordinate.0 {
+                    true => {
+                        if current.coordinate.0 > 0 {
+                            walls.push((current.coordinate.0 - 1, current.coordinate.1));
+                        }
+                        if current.coordinate.1 > 0 {
+                            walls.push((current.coordinate.0, current.coordinate.1 - 1));
+                        }
+                    }
+                    false => {}
+                },
+                Symbol::Ground => unreachable!(),
+                Symbol::Start => {}
             }
-        };
+        }
+
+        for wall in walls {
+            if let Some(tile) = self.map.get_mut(&wall) {
+                tile.is_wall = true;
+            }
+        }
+    }
+
+    fn tile_is_inside(&self, tile: &Tile) -> bool {
+        if tile.is_wall {
+            return true;
+        }
+
+        for r in (0..tile.coordinate.0).rev() {
+            if let Some(other) = self.map.get(&(r, tile.coordinate.1)) {
+                if other.is_wall {
+                    return true;
+                }
+                if !matches!(other.symbol_enum, Symbol::Ground) {
+                    break;
+                }
+            }
+        }
+        for r in tile.coordinate.0..self.size.0 {
+            if let Some(other) = self.map.get(&(r, tile.coordinate.1)) {
+                if other.is_wall {
+                    return true;
+                }
+                if !matches!(other.symbol_enum, Symbol::Ground) {
+                    break;
+                }
+            }
+        }
+
+        for c in (0..tile.coordinate.1).rev() {
+            if let Some(other) = self.map.get(&(tile.coordinate.0, c)) {
+                if other.is_wall {
+                    return true;
+                }
+                if !matches!(other.symbol_enum, Symbol::Ground) {
+                    break;
+                }
+            }
+        }
+        for c in tile.coordinate.0..self.size.1 {
+            if let Some(other) = self.map.get(&(tile.coordinate.0, c)) {
+                if other.is_wall {
+                    return true;
+                }
+                if !matches!(other.symbol_enum, Symbol::Ground) {
+                    break;
+                }
+            }
+        }
+
+        false
+    }
+
+    fn mark_inside(&mut self) -> u64 {
+        let mut count = 0;
+
+        let tiles_to_update: Vec<(usize, usize)> =
+            self.map.iter().filter(|&(_, tile)| self.tile_is_inside(tile)).map(|(coord, _)| *coord).collect();
+
+        for coord in tiles_to_update {
+            if let Some(tile) = self.map.get_mut(&coord) {
+                tile.is_inside = true;
+                count += 1;
+            }
+        }
+
+        count
     }
 }
 
 pub fn part_2(grid: &mut Grid) -> u64 {
-    let pipe = grid.mark_loop();
-
-    let mut nests = 0;
-
-    nests
+    grid.mark_loop();
+    grid.mark_wall();
+    grid.mark_inside()
 }
 
 #[cfg(test)]
@@ -289,6 +379,7 @@ mod test {
     fn test_print_grid(file_name: &str) {
         let mut grid = get_input(file_name);
         grid.mark_loop();
+        grid.pipe.reverse();
         grid.mark_wall();
         println!("{}", grid);
     }

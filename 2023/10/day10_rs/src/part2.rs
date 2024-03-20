@@ -273,12 +273,18 @@ impl Grid {
 
         for wall in walls {
             if let Some(tile) = self.map.get_mut(&wall) {
+                if tile.is_loop {
+                    continue;
+                }
                 tile.is_wall = true;
             }
         }
     }
 
     fn tile_is_inside(&self, tile: &Tile) -> bool {
+        if tile.is_loop {
+            return false;
+        }
         if tile.is_wall {
             return true;
         }
@@ -314,7 +320,7 @@ impl Grid {
                 }
             }
         }
-        for c in tile.coordinate.0..self.size.1 {
+        for c in tile.coordinate.1..self.size.1 {
             if let Some(other) = self.map.get(&(tile.coordinate.0, c)) {
                 if other.is_wall {
                     return true;
@@ -332,7 +338,7 @@ impl Grid {
         let mut count = 0;
 
         let tiles_to_update: Vec<(usize, usize)> =
-            self.map.iter().filter(|&(_, tile)| self.tile_is_inside(tile)).map(|(coord, _)| *coord).collect();
+            self.map.iter().filter(|&(_, tile)| dbg!(self.tile_is_inside(tile))).map(|(coord, _)| *coord).collect();
 
         for coord in tiles_to_update {
             if let Some(tile) = self.map.get_mut(&coord) {
@@ -347,7 +353,9 @@ impl Grid {
 
 pub fn part_2(grid: &mut Grid) -> u64 {
     grid.mark_loop();
+    grid.pipe.reverse();
     grid.mark_wall();
+    println!("{}", grid);
     grid.mark_inside()
 }
 

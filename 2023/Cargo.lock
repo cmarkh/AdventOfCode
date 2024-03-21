@@ -139,6 +139,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "day11_rs"
+version = "0.1.0"
+dependencies = [
+ "test-case",
+]
+
+[[package]]
 name = "day1_rs"
 version = "0.1.0"
 dependencies = [

@@ -153,6 +153,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day12_rs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "test-case",
+]
+
+[[package]]
 name = "day1_rs"
 version = "0.1.0"
 dependencies = [

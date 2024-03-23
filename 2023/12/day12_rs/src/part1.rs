@@ -37,14 +37,18 @@ impl Row {
             }
 
             {
-                let mut row2 = row.clone();
-                row2.springs = row2.springs.replacen('?', ".", 1);
-                queue.push(row2);
+                let row2 =
+                    Row { springs: row.springs.replacen('?', ".", 1), damaged_counts: row.damaged_counts.clone() };
+                if row2.partial_valid() {
+                    queue.push(row2);
+                }
             }
             {
-                let mut row2 = row.clone();
-                row2.springs = row2.springs.replacen('?', "#", 1);
-                queue.push(row2);
+                let row2 =
+                    Row { springs: row.springs.replacen('?', "#", 1), damaged_counts: row.damaged_counts.clone() };
+                if row2.partial_valid() {
+                    queue.push(row2);
+                }
             }
         }
 
@@ -52,12 +56,27 @@ impl Row {
     }
 
     fn valid(&self) -> bool {
-        let groups: Vec<&str> = self.springs.split('.').filter(|group| !group.is_empty()).collect();
-        if groups.len() != self.damaged_counts.len() {
+        let groups = self.springs.split('.').filter(|group| !group.is_empty());
+        if groups.clone().count() != self.damaged_counts.len() {
             return false;
         }
 
-        for (group, count) in groups.iter().zip(self.damaged_counts.iter()) {
+        for (group, count) in groups.zip(self.damaged_counts.iter()) {
+            if group.len() as u64 != *count {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn partial_valid(&self) -> bool {
+        let groups = self.springs.split('.').filter(|group| !group.is_empty());
+
+        for (group, count) in groups.zip(self.damaged_counts.iter()) {
+            if group.contains('?') {
+                return true;
+            }
             if group.len() as u64 != *count {
                 return false;
             }

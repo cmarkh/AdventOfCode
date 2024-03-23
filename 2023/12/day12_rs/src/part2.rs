@@ -33,65 +33,66 @@ impl Row {
     fn permutations(&self) -> u64 {
         let mut perms = 0;
 
-        let mut queue: Vec<Row> = Vec::new();
-        queue.push(self.clone());
+        let damaged_counts = self.damaged_counts.clone();
+        let damaged_counts_len = damaged_counts.len();
 
-        while let Some(row) = queue.pop() {
-            if !row.springs.contains('?') {
-                if row.valid() {
+        let mut queue: Vec<String> = Vec::new();
+        queue.push(self.springs.clone());
+
+        while let Some(springs) = queue.pop() {
+            if !springs.contains('?') {
+                if row_valid(&springs, &damaged_counts, damaged_counts_len) {
                     perms += 1;
                 }
                 continue;
             }
 
             {
-                let row2 =
-                    Row { springs: row.springs.replacen('?', ".", 1), damaged_counts: row.damaged_counts.clone() };
-                if row2.partial_valid() {
-                    queue.push(row2);
+                let springs2 = springs.replacen('?', ".", 1);
+                if row_partial_valid(&springs2, &damaged_counts) {
+                    queue.push(springs2);
                 }
             }
             {
-                let row2 =
-                    Row { springs: row.springs.replacen('?', "#", 1), damaged_counts: row.damaged_counts.clone() };
-                if row2.partial_valid() {
-                    queue.push(row2);
+                let springs2 = springs.replacen('?', "#", 1);
+                if row_partial_valid(&springs2, &damaged_counts) {
+                    queue.push(springs2);
                 }
             }
         }
 
         perms
     }
+}
 
-    fn valid(&self) -> bool {
-        let groups = self.springs.split('.').filter(|group| !group.is_empty());
-        if groups.clone().count() != self.damaged_counts.len() {
+fn row_valid(springs: &str, damaged_counts: &[u64], damaged_counts_len: usize) -> bool {
+    let groups = springs.split('.').filter(|group| !group.is_empty());
+    if groups.clone().count() != damaged_counts_len {
+        return false;
+    }
+
+    for (group, count) in groups.zip(damaged_counts.iter()) {
+        if group.len() as u64 != *count {
             return false;
         }
-
-        for (group, count) in groups.zip(self.damaged_counts.iter()) {
-            if group.len() as u64 != *count {
-                return false;
-            }
-        }
-
-        true
     }
 
-    fn partial_valid(&self) -> bool {
-        let groups = self.springs.split('.').filter(|group| !group.is_empty());
+    true
+}
 
-        for (group, count) in groups.zip(self.damaged_counts.iter()) {
-            if group.contains('?') {
-                return true;
-            }
-            if group.len() as u64 != *count {
-                return false;
-            }
+fn row_partial_valid(springs: &str, damaged_counts: &[u64]) -> bool {
+    let groups = springs.split('.').filter(|group| !group.is_empty());
+
+    for (group, count) in groups.zip(damaged_counts.iter()) {
+        if group.contains('?') {
+            return true;
         }
-
-        true
+        if group.len() as u64 != *count {
+            return false;
+        }
     }
+
+    true
 }
 
 fn part_2(rows: Rows) -> u64 {
@@ -124,22 +125,14 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_valid_row_1() {
-        let row = Row { springs: "#.#.###".to_string(), damaged_counts: vec![1, 1, 3] };
-        assert!(row.valid());
+    #[case("#.#.###", &[1, 1, 3])]
+    fn test_row_valid(springs: &str, damaged_counts: &[u64]) {
+        assert!(row_valid(springs, damaged_counts, damaged_counts.len()));
     }
 
-    #[test]
-    fn test_valid_row_2() {
-        let row = Row { springs: "###.###".to_string(), damaged_counts: vec![1, 1, 3] };
-        assert!(!row.valid());
-    }
-
-    #[test]
-    fn test_valid_row_3() {
-        let row = Row { springs: "#.#.##".to_string(), damaged_counts: vec![1, 1, 3] };
-        assert!(!row.valid());
+    #[case("###.###", &[1, 1, 3])]
+    fn test_row_not_valid(springs: &str, damaged_counts: &[u64]) {
+        assert!(!row_valid(springs, damaged_counts, damaged_counts.len()));
     }
 
     #[test]

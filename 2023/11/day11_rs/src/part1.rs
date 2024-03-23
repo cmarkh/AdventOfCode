@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-struct Grid(Vec<Vec<Cell>>);
+type Grid = crate::grid::Grid<Cell>;
 
 #[derive(Debug, Clone, Copy)]
 struct Cell {
@@ -10,26 +10,25 @@ struct Cell {
 }
 
 fn parse_input(input: &str) -> Grid {
-    let mut grid = Vec::with_capacity(input.lines().count());
+    let mut grid =
+        Grid::new(input.lines().count(), input.lines().next().unwrap().chars().count(), Cell { is_galaxy: false });
 
-    for line in input.lines() {
-        let mut row = vec![Cell { is_galaxy: false }; line.chars().count()];
+    for (r, line) in input.lines().enumerate() {
         for (c, ch) in line.chars().enumerate() {
             if ch == '#' {
-                if let Some(cell) = row.get_mut(c) {
+                if let Some(cell) = grid.get_mut(r, c) {
                     cell.is_galaxy = true;
                 }
             }
         }
-        grid.push(row);
     }
 
-    Grid(grid)
+    grid
 }
 
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in &self.0 {
+        for row in &self.data {
             for cell in row {
                 if cell.is_galaxy {
                     write!(f, "#")?;
@@ -45,47 +44,47 @@ impl fmt::Display for Grid {
 }
 
 impl Grid {
-    fn double_empties(&mut self) {
-        // empty rows
-        {
-            let mut rows = self.0.first().unwrap().len();
-            let mut r = 0;
-            let empty_row = vec![Cell { is_galaxy: false }; self.0.len()];
-            while r < rows {
-                if self.0.get(r).unwrap().iter().any(|row| row.is_galaxy) {
-                    r += 1;
-                    continue;
+    fn row_empty(&self, r: usize) -> bool {
+        if let Some(row) = self.data.get(r) {
+            for c in row {
+                if c.is_galaxy {
+                    return false;
                 }
-                self.0.insert(r + 1, empty_row.clone());
-                r += 2;
-                rows += 1;
             }
         }
+        true
+    }
 
-        // empty columns
-        {
-            let mut cols = self.0.len();
-            let rows = self.0.first().unwrap().len();
-            let mut c = 0;
-            while c < cols {
-                let mut empty = true;
-                for r in 0..rows {
-                    if self.0[r][c].is_galaxy {
-                        empty = false;
-                        break;
-                    }
+    fn column_empty(&self, c: usize) -> bool {
+        for r in 0..self.rows {
+            if let Some(cell) = self.get(r, c) {
+                if cell.is_galaxy {
+                    return false;
                 }
-                if !empty {
-                    c += 1;
-                    continue;
-                }
-
-                for r in 0..rows {
-                    self.0.insert(r + 1, vec![Cell { is_galaxy: false }; cols]);
-                }
-                c += 2;
-                cols += 1;
             }
+        }
+        true
+    }
+
+    fn double_empties(&mut self) {
+        let mut r = 0;
+        while r < self.rows {
+            if !self.row_empty(r) {
+                r += 1;
+                continue;
+            }
+            self.insert_row(r + 1, vec![Cell { is_galaxy: false }; self.columns]);
+            r += 2;
+        }
+
+        let mut c = 0;
+        while c < self.columns {
+            if !self.column_empty(c) {
+                c += 1;
+                continue;
+            }
+            self.insert_column(c + 1, vec![Cell { is_galaxy: false }; self.rows]);
+            c += 2;
         }
     }
 }

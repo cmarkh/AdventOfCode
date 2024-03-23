@@ -25,6 +25,10 @@ impl<T: Clone> Grid<T> {
         self.data.get(row)?.get(column)
     }
 
+    pub fn get_mut(&mut self, row: usize, column: usize) -> Option<&mut T> {
+        self.data.get_mut(row)?.get_mut(column)
+    }
+
     pub fn set(&mut self, row: usize, column: usize, value: T) -> anyhow::Result<()> {
         if let Some(r) = self.data.get_mut(row) {
             if let Some(c) = r.get_mut(column) {

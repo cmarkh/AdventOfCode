@@ -12,16 +12,8 @@ fn parse_input(input: &str) -> Rows {
     let mut rows = Vec::new();
 
     for line in input.lines() {
-        let (base_springs, counts) = line.split_once(' ').unwrap();
-
+        let (springs, counts) = line.split_once(' ').unwrap();
         let counts: Vec<u64> = counts.split(',').map(|ch| ch.parse().unwrap()).collect();
-        let counts = counts.repeat(5);
-
-        let mut springs = base_springs.to_string();
-        for _ in 0..4 {
-            springs += "?";
-            springs += base_springs;
-        }
 
         rows.push(Row { springs: springs.to_string(), damaged_counts: counts });
     }
@@ -65,7 +57,6 @@ impl Row {
     }
 }
 
-#[timed::timed]
 fn row_valid(springs: &str, damaged_counts: &[u64]) -> bool {
     let groups = springs.split('.').filter(|group| !group.is_empty());
     if groups.clone().count() != damaged_counts.len() {
@@ -81,7 +72,6 @@ fn row_valid(springs: &str, damaged_counts: &[u64]) -> bool {
     true
 }
 
-#[timed::timed]
 fn row_partial_valid(springs: &str, damaged_counts: &[u64]) -> bool {
     let groups = springs.split('.').filter(|group| !group.is_empty());
 
@@ -100,7 +90,28 @@ fn row_partial_valid(springs: &str, damaged_counts: &[u64]) -> bool {
 fn part_2(rows: Rows) -> u64 {
     let mut sum = 0;
     for row in &rows {
-        sum += row.permutations();
+        let mut row_sum = 1;
+        {
+            // spring * 5
+            row_sum *= row.permutations() * 5;
+        }
+        {
+            // spring? * 4
+            let row2 = Row { springs: format!("{}?", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
+            row_sum *= row2.permutations() * 4;
+        }
+        {
+            // ?spring * 4
+            let row2 = Row { springs: format!("?{}", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
+            row_sum *= row2.permutations() * 4;
+        }
+        {
+            // ?spring? * 3
+            let row2 =
+                Row { springs: format!("?{}?", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
+            row_sum *= row2.permutations() * 3;
+        }
+        sum += row_sum
     }
     sum
 }

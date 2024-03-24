@@ -6,6 +6,7 @@ type Rows = Vec<Row>;
 struct Row {
     springs: String,
     damaged_counts: Vec<u64>,
+    unknown_indices: Vec<usize>,
 }
 
 fn parse_input(input: &str) -> Rows {
@@ -23,7 +24,11 @@ fn parse_input(input: &str) -> Rows {
             springs += base_springs;
         }
 
-        rows.push(Row { springs: springs.to_string(), damaged_counts: counts });
+        let springs = springs.to_string();
+        let mut unknown_indices: Vec<usize> =
+            springs.chars().enumerate().filter(|(_, ch)| ch == &'?').map(|(i, _)| i).collect();
+        unknown_indices.reverse();
+        rows.push(Row { springs, damaged_counts: counts, unknown_indices });
     }
 
     rows
@@ -35,27 +40,31 @@ impl Row {
 
         let damaged_counts = self.damaged_counts.clone();
 
-        let mut queue: Vec<String> = Vec::new();
-        queue.push(self.springs.clone());
+        let mut queue: Vec<Row> = Vec::new();
+        queue.push(self.clone());
 
-        while let Some(springs) = queue.pop() {
-            if !springs.contains('?') {
-                if row_valid(&springs, &damaged_counts) {
+        while let Some(row) = queue.pop() {
+            if !row.springs.contains('?') {
+                if row_valid(&row.springs, &damaged_counts) {
                     perms += 1;
                 }
                 continue;
             }
 
             {
-                let springs2 = springs.replacen('?', ".", 1);
-                if row_partial_valid(&springs2, &damaged_counts) {
-                    queue.push(springs2);
+                let mut row2 = row.clone();
+                let idx = row2.unknown_indices.pop().unwrap();
+                row2.springs.replace_range(idx..(idx + 1), ".");
+                if row_partial_valid(&row2.springs, &damaged_counts) {
+                    queue.push(row2);
                 }
             }
             {
-                let springs2 = springs.replacen('?', "#", 1);
-                if row_partial_valid(&springs2, &damaged_counts) {
-                    queue.push(springs2);
+                let mut row2 = row.clone();
+                let idx = row2.unknown_indices.pop().unwrap();
+                row2.springs.replace_range(idx..(idx + 1), "#");
+                if row_partial_valid(&row2.springs, &damaged_counts) {
+                    queue.push(row2);
                 }
             }
         }
@@ -131,7 +140,7 @@ mod test {
 
     #[test]
     fn test_permutations_1() {
-        let row = Row { springs: "???.###".to_string(), damaged_counts: vec![1, 1, 3] };
+        let row = Row { springs: "???.###".to_string(), damaged_counts: vec![1, 1, 3], unknown_indices: vec![0, 1, 2] };
         let perms = row.permutations();
         dbg!(&perms);
         assert_eq!(perms, 1);
@@ -139,7 +148,11 @@ mod test {
 
     #[test]
     fn test_permutations_2() {
-        let row = Row { springs: ".??..??...?##.".to_string(), damaged_counts: vec![1, 1, 3] };
+        let row = Row {
+            springs: ".??..??...?##.".to_string(),
+            damaged_counts: vec![1, 1, 3],
+            unknown_indices: vec![1, 2, 5, 6, 10],
+        };
         let perms = row.permutations();
         dbg!(&perms);
         assert_eq!(perms, 4);

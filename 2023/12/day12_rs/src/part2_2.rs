@@ -21,40 +21,35 @@ fn parse_input(input: &str) -> Rows {
     rows
 }
 
-impl Row {
-    #[timed::timed]
-    fn permutations(&self) -> u64 {
-        let mut perms = 0;
+fn permutations(springs: &str, damaged_counts: &[u64]) -> u64 {
+    let mut perms = 0;
 
-        let damaged_counts = self.damaged_counts.clone();
+    let mut queue: Vec<String> = Vec::new();
+    queue.push(springs.to_string());
 
-        let mut queue: Vec<String> = Vec::new();
-        queue.push(self.springs.clone());
-
-        while let Some(springs) = queue.pop() {
-            if !springs.contains('?') {
-                if row_valid(&springs, &damaged_counts) {
-                    perms += 1;
-                }
-                continue;
+    while let Some(springs) = queue.pop() {
+        if !springs.contains('?') {
+            if row_valid(&springs, damaged_counts) {
+                perms += 1;
             }
-
-            {
-                let springs2 = springs.replacen('?', ".", 1);
-                if row_partial_valid(&springs2, &damaged_counts) {
-                    queue.push(springs2);
-                }
-            }
-            {
-                let springs2 = springs.replacen('?', "#", 1);
-                if row_partial_valid(&springs2, &damaged_counts) {
-                    queue.push(springs2);
-                }
-            }
+            continue;
         }
 
-        perms
+        {
+            let springs2 = springs.replacen('?', ".", 1);
+            if row_partial_valid(&springs2, damaged_counts) {
+                queue.push(springs2);
+            }
+        }
+        {
+            let springs2 = springs.replacen('?', "#", 1);
+            if row_partial_valid(&springs2, damaged_counts) {
+                queue.push(springs2);
+            }
+        }
     }
+
+    perms
 }
 
 fn row_valid(springs: &str, damaged_counts: &[u64]) -> bool {
@@ -91,26 +86,36 @@ fn part_2(rows: Rows) -> u64 {
     let mut sum = 0;
     for row in &rows {
         let mut row_sum = 1;
+
+        let spring = row.springs.clone();
+        let springq = format!("{}?", row.springs.clone());
+        let qspring = format!("?{}", row.springs.clone());
+        let qspringq = format!("?{}?", row.springs.clone());
+
         {
-            // spring * 5
-            row_sum *= row.permutations() * 5;
+            // part 1
+            let mut part_sum = 0;
+            part_sum += permutations(&spring, &row.damaged_counts);
+            part_sum += permutations(&springq, &row.damaged_counts);
+            row_sum *= part_sum;
         }
         {
-            // spring? * 4
-            let row2 = Row { springs: format!("{}?", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
-            row_sum *= row2.permutations() * 4;
+            // part 2,3,4
+            let mut part_sum = 0;
+            part_sum += permutations(&spring, &row.damaged_counts);
+            part_sum += permutations(&springq, &row.damaged_counts);
+            part_sum += permutations(&qspring, &row.damaged_counts);
+            part_sum += permutations(&qspringq, &row.damaged_counts);
+            row_sum *= part_sum * 3;
         }
         {
-            // ?spring * 4
-            let row2 = Row { springs: format!("?{}", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
-            row_sum *= row2.permutations() * 4;
+            // part 5
+            let mut part_sum = 0;
+            part_sum += permutations(&spring, &row.damaged_counts);
+            part_sum += permutations(&qspring, &row.damaged_counts);
+            row_sum *= part_sum;
         }
-        {
-            // ?spring? * 3
-            let row2 =
-                Row { springs: format!("?{}?", row.springs.clone()), damaged_counts: row.damaged_counts.clone() };
-            row_sum *= row2.permutations() * 3;
-        }
+
         sum += row_sum
     }
     sum
@@ -151,7 +156,7 @@ mod test {
     #[test]
     fn test_permutations_1() {
         let row = Row { springs: "???.###".to_string(), damaged_counts: vec![1, 1, 3] };
-        let perms = row.permutations();
+        let perms = permutations(&row.springs, &row.damaged_counts);
         dbg!(&perms);
         assert_eq!(perms, 1);
     }
@@ -159,7 +164,7 @@ mod test {
     #[test]
     fn test_permutations_2() {
         let row = Row { springs: ".??..??...?##.".to_string(), damaged_counts: vec![1, 1, 3] };
-        let perms = row.permutations();
+        let perms = permutations(&row.springs, &row.damaged_counts);
         dbg!(&perms);
         assert_eq!(perms, 4);
     }

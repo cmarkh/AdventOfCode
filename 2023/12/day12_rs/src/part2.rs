@@ -30,7 +30,6 @@ fn parse_input(input: &str) -> Rows {
 }
 
 impl Row {
-    #[timed::timed]
     fn permutations(&self) -> u64 {
         let mut perms = 0;
 
@@ -65,36 +64,29 @@ impl Row {
     }
 }
 
-#[timed::timed]
 fn row_valid(springs: &str, damaged_counts: &[u64]) -> bool {
-    let groups = springs.split('.').filter(|group| !group.is_empty());
-    if groups.clone().count() != damaged_counts.len() {
-        return false;
-    }
+    let group_lengths: Vec<u64> =
+        springs.split('.').filter(|&group| (!group.is_empty())).map(|group| group.len() as u64).collect();
 
-    for (group, count) in groups.zip(damaged_counts.iter()) {
-        if group.len() as u64 != *count {
-            return false;
-        }
-    }
-
-    true
+    group_lengths == damaged_counts
 }
 
-#[timed::timed]
 fn row_partial_valid(springs: &str, damaged_counts: &[u64]) -> bool {
-    let groups = springs.split('.').filter(|group| !group.is_empty());
-
-    for (group, count) in groups.zip(damaged_counts.iter()) {
+    let mut count_iter = damaged_counts.iter();
+    for group in springs.split('.').filter(|g| !g.is_empty()) {
         if group.contains('?') {
             return true;
         }
-        if group.len() as u64 != *count {
-            return false;
+        match count_iter.next() {
+            Some(&expected_count) => {
+                if group.len() as u64 != expected_count {
+                    return false;
+                }
+            }
+            None => return false,
         }
     }
-
-    true
+    count_iter.next().is_none()
 }
 
 fn part_2(rows: Rows) -> u64 {

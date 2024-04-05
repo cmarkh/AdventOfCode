@@ -106,10 +106,9 @@ impl Row {
                         queue.push(row);
                     }
                     {
-                        let mut row = row.clone();
-                        let group = row.springs.pop().unwrap();
-                        let group = group.replacen('?', "#", 1);
-                        row.springs.push(group);
+                        if let Some(group) = row.springs.last_mut() {
+                            *group = group.replacen('?', "#", 1);
+                        }
                         queue.push(row);
                     }
                 }
@@ -162,7 +161,7 @@ mod test {
     }
 
     #[case("ex1.txt" => 525152)]
-    // #[case("input.txt" => 7732) ]
+    #[case("input.txt" => 7732) ]
     fn test_part_2(file: &str) -> u64 {
         let rows = get_input(file);
         part_2(rows)

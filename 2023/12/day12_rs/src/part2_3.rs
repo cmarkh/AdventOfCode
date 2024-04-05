@@ -86,8 +86,8 @@ impl Row {
                 Status::Invalid => continue,
                 Status::Partial => {
                     {
-                        let mut row = row.clone();
                         if let Some(idx) = row.springs.last().unwrap().find('?') {
+                            let mut row = row.clone();
                             let group = row.springs.pop().unwrap();
                             // replace ? with . and split on .
                             if !group[..idx].is_empty() {

@@ -1,14 +1,11 @@
 #![allow(dead_code)]
 
-use std::collections::HashSet;
-
 type Rows = Vec<Row>;
 
 #[derive(Debug, Clone)]
 struct Row {
     springs: Vec<String>,
     damaged_counts: Vec<u64>,
-    string: String,
 }
 
 fn parse_input(input: &str) -> Rows {
@@ -25,9 +22,9 @@ fn parse_input(input: &str) -> Rows {
             springs += "?";
             springs += base_springs;
         }
-        let springs = springs.split('.').map(|str| str.to_string()).collect();
+        let springs = springs.split('.').filter(|str| !str.is_empty()).map(|str| str.to_string()).collect();
 
-        rows.push(Row { springs, damaged_counts: counts, string: String::new() });
+        rows.push(Row { springs, damaged_counts: counts });
     }
 
     rows
@@ -41,20 +38,41 @@ enum Status {
 
 impl Row {
     fn check(&mut self) -> Status {
-        if self.springs.is_empty() && self.damaged_counts.is_empty() {
-            return Status::Done;
-        }
-        if self.springs.is_empty() || self.damaged_counts.is_empty() {
-            return Status::Invalid;
+        match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
+            (true, true) => return Status::Done,
+            (true, false) => return Status::Invalid,
+            (false, true) => {
+                for group in &self.springs {
+                    if group.contains('#') {
+                        return Status::Invalid;
+                    }
+                }
+                return Status::Done; // remaining ? can be all .
+            }
+            (false, false) => (),
         }
 
-        // if !self.springs.first().unwrap().contains('?') {
-        //     let group = self.springs.remove(0);
-        //     let count = self.damaged_counts.remove(0);
-        //     if group.len() != count as usize {
-        //         return Status::Invalid;
-        //     }
-        // }
+        if !self.springs.first().unwrap().contains('?') {
+            let group = self.springs.remove(0);
+            let count = self.damaged_counts.remove(0);
+            if group.len() != count as usize {
+                return Status::Invalid;
+            }
+        }
+
+        match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
+            (true, true) => return Status::Done,
+            (true, false) => return Status::Invalid,
+            (false, true) => {
+                for group in &self.springs {
+                    if group.contains('#') {
+                        return Status::Invalid;
+                    }
+                }
+                return Status::Done; // remaining ? can be all .
+            }
+            (false, false) => (),
+        }
 
         if !self.springs.last().unwrap().contains('?') {
             let group = self.springs.pop().unwrap();
@@ -62,22 +80,27 @@ impl Row {
             if group.len() != count as usize {
                 return Status::Invalid;
             }
-            self.string = format!("{}.{}", self.string, group)
         }
 
-        if self.springs.is_empty() {
-            if self.damaged_counts.is_empty() {
-                Status::Done
-            } else {
-                Status::Invalid
+        match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
+            (true, true) => return Status::Done,
+            (true, false) => return Status::Invalid,
+            (false, true) => {
+                for group in &self.springs {
+                    if group.contains('#') {
+                        return Status::Invalid;
+                    }
+                }
+                return Status::Done; // remaining ? can be all .
             }
-        } else {
-            Status::Partial
+            (false, false) => (),
         }
+
+        Status::Partial
     }
 
     fn permutations(&mut self) -> u64 {
-        let mut perms: HashSet<String> = HashSet::new();
+        let mut perms = 0;
 
         let mut queue: Vec<Row> = Vec::new();
         queue.push(self.clone());
@@ -85,7 +108,7 @@ impl Row {
         while let Some(mut row) = queue.pop() {
             // println!("{:?}", row.springs);
             match row.check() {
-                Status::Done => _ = perms.insert(dbg!(row.string)),
+                Status::Done => perms += 1,
                 Status::Invalid => continue,
                 Status::Partial => {
                     if !row.springs.last().unwrap().contains('?') {
@@ -119,8 +142,7 @@ impl Row {
             }
         }
 
-        dbg!(&perms);
-        perms.len() as u64
+        perms
     }
 }
 
@@ -152,6 +174,17 @@ mod test {
         for row in &rows {
             println!("{:?}", row);
         }
+    }
+
+    #[case("???.### 1,1,3" => 1)]
+    #[case(".??..??...?##. 1,1,3" => 16384) ]
+    #[case("?#?#?#?#?#?#?#? 1,3,1,6" => 1) ]
+    #[case("????.#...#... 4,1,1" => 16) ]
+    #[case("????.######..#####. 1,6,5" => 2500) ]
+    #[case("?###???????? 3,2,1" => 506250) ]
+    fn test_line(line: &str) -> u64 {
+        let rows = parse_input(line);
+        part_2(rows)
     }
 
     #[case("ex1.txt" => 525152)]

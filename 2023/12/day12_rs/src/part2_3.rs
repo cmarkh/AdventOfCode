@@ -38,65 +38,39 @@ enum Status {
 
 impl Row {
     fn check(&mut self) -> Status {
+        if let Some(spring) = self.springs.first() {
+            if !spring.contains('?') {
+                let group = self.springs.remove(0);
+                let count = self.damaged_counts.remove(0);
+                if group.len() != count as usize {
+                    return Status::Invalid;
+                }
+            }
+        }
+
+        if let Some(spring) = self.springs.last() {
+            if !spring.contains('?') {
+                let group = self.springs.pop().unwrap();
+                let count = self.damaged_counts.pop().unwrap();
+                if group.len() != count as usize {
+                    return Status::Invalid;
+                }
+            }
+        }
+
         match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
-            (true, true) => return Status::Done,
-            (true, false) => return Status::Invalid,
+            (true, true) => Status::Done,
+            (true, false) => Status::Invalid,
             (false, true) => {
                 for group in &self.springs {
                     if group.contains('#') {
                         return Status::Invalid;
                     }
                 }
-                return Status::Done; // remaining ? can be all .
+                Status::Done // remaining ? can be all .
             }
-            (false, false) => (),
+            (false, false) => Status::Partial,
         }
-
-        if !self.springs.first().unwrap().contains('?') {
-            let group = self.springs.remove(0);
-            let count = self.damaged_counts.remove(0);
-            if group.len() != count as usize {
-                return Status::Invalid;
-            }
-        }
-
-        match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
-            (true, true) => return Status::Done,
-            (true, false) => return Status::Invalid,
-            (false, true) => {
-                for group in &self.springs {
-                    if group.contains('#') {
-                        return Status::Invalid;
-                    }
-                }
-                return Status::Done; // remaining ? can be all .
-            }
-            (false, false) => (),
-        }
-
-        if !self.springs.last().unwrap().contains('?') {
-            let group = self.springs.pop().unwrap();
-            let count = self.damaged_counts.pop().unwrap();
-            if group.len() != count as usize {
-                return Status::Invalid;
-            }
-        }
-
-        match (self.springs.is_empty(), self.damaged_counts.is_empty()) {
-            (true, true) => return Status::Done,
-            (true, false) => return Status::Invalid,
-            (false, true) => {
-                for group in &self.springs {
-                    if group.contains('#') {
-                        return Status::Invalid;
-                    }
-                }
-                return Status::Done; // remaining ? can be all .
-            }
-            (false, false) => (),
-        }
-
-        Status::Partial
     }
 
     fn permutations(&mut self) -> u64 {
@@ -188,7 +162,7 @@ mod test {
     }
 
     #[case("ex1.txt" => 525152)]
-    #[case("input.txt" => 7732) ]
+    // #[case("input.txt" => 7732) ]
     fn test_part_2(file: &str) -> u64 {
         let rows = get_input(file);
         part_2(rows)

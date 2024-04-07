@@ -54,52 +54,35 @@ fn parse_input(input: &str) -> Vec<Grid> {
 
 impl Grid {
     fn find_vertical(&self) -> Option<usize> {
-        for center in 1..self.0[0].len() {
+        for center in 1..(self.0[0].len() - 1) {
+            let max_offset = center.min(self.0[0].len() - 2 - center);
             'center: {
                 for row in &self.0 {
-                    let offset = 'offset: {
-                        for offset in 0..center + 1 {
-                            if row[center - offset] {
-                                break 'offset offset + 1;
-                            }
+                    for offset in 0..=max_offset {
+                        if center + offset + 1 >= self.0[0].len() {
+                            break 'center;
                         }
-                        break 'center;
-                    };
-                    if center + offset >= row.len() || !row[center + offset] {
-                        break 'center;
-                    }
-                    for offset in 1..offset {
-                        // all cells between the center and offset should be false
-                        if row[center + offset] {
+                        if row[center - offset] != row[center + offset + 1] {
                             break 'center;
                         }
                     }
                 }
-                // if made it here, the center is good
                 return Some(center + 1);
             }
         }
-
         None
     }
 
     fn find_horizontal(&self) -> Option<usize> {
-        for center in 1..self.0.len() {
+        for center in 1..(self.0.len() - 1) {
+            let max_offset = center.min(self.0.len() - 2 - center);
             'center: {
-                for col in 0..self.0.len() {
-                    let offset = 'offset: {
-                        for offset in 0..center + 1 {
-                            if self.0[center - offset][col] {
-                                break 'offset offset + 1;
-                            }
+                for col in 0..(self.0[0].len() - 1) {
+                    for offset in 0..=max_offset {
+                        if center + offset + 1 >= self.0.len() {
+                            break 'center;
                         }
-                        break 'center;
-                    };
-                    if center + offset >= self.0.len() || !self.0[center + offset][col] {
-                        break 'center;
-                    }
-                    for offset in 1..offset {
-                        if self.0[center + offset][col] {
+                        if self.0[center - offset][col] != self.0[center + offset + 1][col] {
                             break 'center;
                         }
                     }
@@ -107,7 +90,6 @@ impl Grid {
                 return Some(center + 1);
             }
         }
-
         None
     }
 }
@@ -116,28 +98,14 @@ fn part_1(grids: Vec<Grid>) -> usize {
     let (mut verticals, mut horizontals) = (0, 0);
 
     for grid in grids {
-        // if let Some(center) = grid.find_vertical() {
-        //     verticals += center;
-        // } else if let Some(center) = grid.find_horizontal() {
-        //     horizontals += center;
-        // }
-        let vertical = grid.find_vertical();
-        let horizontal = grid.find_horizontal();
-        match (vertical, horizontal) {
-            (None, Some(h)) => horizontals += h,
-            (Some(v), None) => verticals += v,
-            (Some(v), Some(h)) => match v.cmp(&h) {
-                Ordering::Equal => unreachable!(),
-                Ordering::Less => verticals += v,
-                Ordering::Greater => horizontals += h,
-            },
-            (None, None) => unreachable!(),
+        if let Some(center) = grid.find_vertical() {
+            verticals += center;
+        } else if let Some(center) = grid.find_horizontal() {
+            horizontals += center;
+        } else {
+            unreachable!()
         }
-        dbg!(verticals, horizontals);
     }
-
-    // verticals += grids.first().unwrap().find_vertical().unwrap();
-    // horizontals += grids.last().unwrap().find_horizontal().unwrap();
 
     verticals + horizontals * 100
 }
@@ -167,22 +135,20 @@ mod test {
     fn test_vertical(file: &str) -> Option<usize> {
         let grids = get_input(file);
         let grid = grids.first().unwrap();
-        let center = grid.find_vertical();
-        dbg!(center)
+        grid.find_vertical()
     }
 
     #[case("ex1.txt" => Some(4))]
     fn test_horizontal(file: &str) -> Option<usize> {
         let grids = get_input(file);
         let grid = grids.last().unwrap();
-        let center = grid.find_horizontal();
-        dbg!(center)
+        grid.find_horizontal()
     }
 
     #[case("ex1.txt" => 405)]
+    #[case("input.txt" => 405)]
     fn test_part_1(file: &str) -> usize {
         let grids = get_input(file);
-        let res = part_1(grids);
-        dbg!(res)
+        part_1(grids)
     }
 }

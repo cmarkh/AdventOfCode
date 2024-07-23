@@ -31,10 +31,7 @@ fn parse_input(input: &str) -> Vec<Card> {
             let (winning_nums, my_nums) = line.split_once('|').unwrap();
             let winning_nums = parse(winning_nums);
             let my_nums = parse(my_nums);
-            Card {
-                winning_nums,
-                my_nums,
-            }
+            Card { winning_nums, my_nums }
         })
         .collect()
 }
@@ -42,10 +39,7 @@ fn parse_input(input: &str) -> Vec<Card> {
 fn original_games(cards: &[Card]) -> Vec<Game> {
     cards
         .iter()
-        .map(|card| Game {
-            count: 1,
-            new_hands: card.winning_nums.intersection(&card.my_nums).count(),
-        })
+        .map(|card| Game { count: 1, new_hands: card.winning_nums.intersection(&card.my_nums).count() })
         .collect()
 }
 
@@ -68,7 +62,7 @@ mod test {
 
     #[case("ex1.txt" => 30)]
     #[case("input.txt" => 5833065)]
-    fn test_part1(input_name: &str) -> usize {
+    fn test_part2(input_name: &str) -> usize {
         let input = std::fs::read_to_string(format!("src/{}", input_name)).unwrap();
         let cards = parse_input(&input);
         part2(&cards)

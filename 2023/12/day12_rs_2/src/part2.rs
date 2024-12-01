@@ -18,7 +18,8 @@ fn parse_input(input: &str) -> Rows {
         let (base_springs, counts) = line.split_once(' ').unwrap();
 
         let counts: Vec<i32> = counts.split(',').map(|ch| ch.parse().unwrap()).collect();
-        let springs = base_springs.to_string();
+        let counts = counts.repeat(5);
+        let springs = std::iter::repeat(base_springs).take(5).collect::<Vec<_>>().join("?");
 
         rows.push(Row { springs, damaged_counts: counts });
     }
@@ -92,7 +93,7 @@ fn row_permutations(row: &Row) -> usize {
     count
 }
 
-fn part1(rows: Rows) -> usize {
+fn part2(rows: Rows) -> usize {
     let mut count = 0;
     for row in rows {
         dbg!(&row);
@@ -131,18 +132,21 @@ mod test {
         }
     }
 
-    #[case("ex1.txt", 4)]
-    fn test_row(file: &str, expected: usize) {
+    #[case("ex1.txt", 0, 1)]
+    #[case("ex1.txt", 2, 1)]
+    #[case("ex1.txt", 3, 16)]
+    #[case("ex1.txt", 4, 2500)]
+    fn test_row(file: &str, row: usize, expected: usize) {
         let rows = get_input(file);
-        let count = row_permutations(&rows[1]);
+        let count = row_permutations(&rows[row]);
         assert_eq!(count, expected);
     }
 
     #[case("ex1.txt", 21)]
     #[case("input.txt", 7732)]
-    fn test_part_1(file: &str, expected: usize) {
+    fn test_part_2(file: &str, expected: usize) {
         let rows = get_input(file);
-        let count = part1(rows);
+        let count = part2(rows);
         assert_eq!(count, expected);
     }
 }

@@ -1,0 +1,2 @@
+use bytes instead of string (must be ASCII)
+index into them 

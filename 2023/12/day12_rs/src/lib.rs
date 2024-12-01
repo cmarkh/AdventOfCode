@@ -1,4 +1,11 @@
 pub mod part1;
 pub mod part2;
+pub mod part2_10;
 pub mod part2_2;
 pub mod part2_3;
+pub mod part2_4;
+pub mod part2_5;
+pub mod part2_6;
+pub mod part2_7;
+pub mod part2_8;
+pub mod part2_9;

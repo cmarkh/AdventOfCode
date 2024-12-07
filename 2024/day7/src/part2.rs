@@ -39,14 +39,22 @@ fn test_equation(equation: &Equation) -> bool {
     let mut queue: Vec<(Equation, Vec<char>)> = vec![(equation.clone(), Vec::new())];
 
     while let Some(item) = queue.pop() {
-        if item.1.len() == item.0.digits.len() - 1 {
-            let mut result = item.0.digits[0];
-            for (i, digit) in item.0.digits.iter().enumerate() {
-                if i == 0 {
-                    continue;
-                }
-                result = operation(result, *digit, item.1[i - 1]);
+        // println!("{} {:?}", item.0, item.1);
+
+        let mut result = item.0.digits[0];
+        for (i, digit) in item.0.digits.iter().enumerate() {
+            if i == 0 {
+                continue;
             }
+            if i > item.1.len() {
+                break;
+            }
+            result = operation(result, *digit, item.1[i - 1]);
+        }
+        if result > equation.answer {
+            continue;
+        }
+        if item.1.len() == item.0.digits.len() - 1 {
             if result == equation.answer {
                 return true;
             }

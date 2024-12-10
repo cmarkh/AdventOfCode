@@ -61,6 +61,9 @@ fn part2(mut disk: Vec<i64>, mut blocks: Vec<Block>) -> i64 {
             if i >= block.start {
                 break;
             }
+            if disk[i] != -1 {
+                continue;
+            }
             if disk[i..(i + block.len)].iter().all(|&n| n == -1) {
                 disk[i..(i + block.len)].copy_from_slice(&vec![block.id; block.len]);
                 disk[block.start..(block.start + block.len)].copy_from_slice(&vec![-1; block.len]);

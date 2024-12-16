@@ -18,7 +18,22 @@ fn part1(games: &Games) -> i64 {
     let mut cost = 0;
 
     for game in games {
-        cost += dbg!(solve(game));
+        let x = (game.a.0, game.b.0, game.prize.0);
+        let y = (game.a.1, game.b.1, game.prize.1);
+
+        let (a, b) = match solve2(x, y) {
+            Some((a, b)) => (a, b),
+            None => continue,
+        };
+        if a < 0 || b < 0 {
+            continue;
+        }
+
+        println!("\n{}a + {}b = {}", game.a.0, game.b.0, game.prize.0);
+        println!("{}a + {}b = {}", game.a.1, game.b.1, game.prize.1);
+        println!("a: {}, b: {}", a, b);
+
+        cost += a * 3 + b;
     }
 
     cost
@@ -98,55 +113,28 @@ fn read_file(file: &str) -> Result<Games> {
     Ok(games)
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Position {
-    x: i64,
-    y: i64,
-    a_presses: i64,
-    b_presses: i64,
-}
+fn solve2((a1, b1, s1): (i64, i64, i64), (a2, b2, s2): (i64, i64, i64)) -> Option<(i64, i64)> {
+    // a1*x + b1*y = s1
+    // a2*x + b2*y = s2
 
-impl Position {
-    fn cost(&self) -> i64 {
-        self.a_presses * 3 + self.b_presses
+    // let one = (a1 * b2, b1 * b2, s1 * b2);
+    // let two = (a2 * b1, b2 * b1, s2 * b1);
+    // let diff = (a1 * b2 - a2 * b1, s1 * b2 - s2 * b1);
+
+    let x = (s1 * b2 - s2 * b1) / (a1 * b2 - a2 * b1);
+
+    // let one = (a1 * a2, b1 * a2, s1 * a2);
+    // let two = (a2 * a1, b2 * a1, s2 * a1);
+    // let diff = (b1 * a2 - b2 * a1, s1 * a2 - s2 * a1);
+
+    let y = (s1 * a2 - s2 * a1) / (b1 * a2 - b2 * a1);
+
+    // need to check if rounding occured
+    if x * a1 + y * b1 == s1 && x * a2 + y * b2 == s2 {
+        Some((x, y))
+    } else {
+        None
     }
-
-    fn distance(&self, game: &Game) -> i64 {
-        (game.prize.0 - self.x) + (game.prize.1 - self.y)
-    }
-
-    fn out_of_bounds(&self, game: &Game) -> bool {
-        self.x > game.prize.0 || self.y > game.prize.1
-    }
-
-    fn reject(&self, game: &Game, min_cost: i64) -> bool {
-        if self.out_of_bounds(game) {
-            return true;
-        }
-
-        let x = game.prize.0 - self.x;
-        let y = game.prize.1 - self.y;
-
-        let min_a = (x / game.a.0).max(y / game.a.1);
-        let min_b = (x / game.b.0).max(y / game.b.1);
-
-        if (min_a * 3).min(min_b) >= min_cost {
-            return true;
-        }
-
-        false
-    }
-}
-
-fn solve(game: &Game) -> i64 {
-    println!("{}a + {}b = {}", game.a.0, game.b.0, game.prize.0);
-    println!("{}a + {}b = {}", game.a.1, game.b.1, game.prize.1);
-
-    let denominator = game.a.0 * game.b.1 - game.a.1 * game.b.0;
-    let x = (game.prize.0 * game.b.1 - game.prize.1 * game.b.0) / denominator;
-    let y = (game.a.0 * game.prize.1 - game.a.1 * game.prize.0) / denominator;
-
-    x * 3 + y
 }
 
 #[cfg(test)]
@@ -161,7 +149,15 @@ mod tests {
         println!("{:?}", input);
     }
 
-    #[case("input.txt", 163458403948294)] // too high
+    #[case((94, 22, 8400), (34,67,5400), Some((80, 40)))]
+    #[case((68, 14, 5034), (17, 76, 2051), Some((71, 10)))]
+    fn test_solve2(a: (i64, i64, i64), b: (i64, i64, i64), expected: Option<(i64, i64)>) {
+        let result = solve2(a, b);
+        dbg!(result);
+        assert_eq!(result, expected);
+    }
+
+    #[case("input.txt", 103570327981381)]
     fn test_part1(file: &str, expected: i64) {
         let grid = read_file(file).unwrap();
         let price = part1(&grid);

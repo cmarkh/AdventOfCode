@@ -20,7 +20,7 @@ fn part1(games: &Games) -> i64 {
     let mut cost = 0;
 
     for game in games {
-        cost += dbg!(solve(game));
+        cost += solve(game);
     }
 
     cost
